@@ -1,3 +1,36 @@
+/***************************************************************************\
+*                                      __     ____ __                       *
+*                  _______  __ _____  / /_   / _(_) /__ ___                 *
+*                 / __/ _ \/ // / _ \/ __/  / _/ / / -_|_-<                 *
+*                 \__/\___/\_,_/_//_/\__/__/_//_/_/\__/___/                 *
+*                                      /___/                                *
+*                                                                           *
+*  -----------------------------------------------------------------------  *
+*  This file is a part of count_files                                       *
+*                                                                           *
+*  count_files is free software; you can redistribute it and/or             *
+*  modify it under the terms of the GNU General Public License              *
+*  as published by the Free Software Foundation; either version 3           *
+*  of the License, or (at your option) any later version.                   *
+*                                                                           *
+*  This program is distributed in the hope that it will be useful,          *
+*  but WITHOUT ANY WARRANTY; without even the implied warranty of           *
+*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            *
+*  GNU General Public License for more details.                             *
+*                                                                           *
+*  You should have received a copy of the GNU General Public License        *
+*  along with this program; if not, write to the Free Software              *
+*  Foundation, Inc., 51 Franklin Street, Fifth Floor,                       *
+*  Boston, MA  02110-1301, USA.                                             *
+*                                                                           *
+*  You should have received a copy of the GNU General Public License        *
+*  along with this program.  If not, see <http://www.gnu.org/licenses/>.    *
+*                                                                           *
+*  -----------------------------------------------------------------------  *
+*  Copyright (C) 2013, Clercin guillaume <clercin.guillaume@gmail.com>      *
+*  Last modified: Tue, 19 Feb 2013 22:49:08 +0100                           *
+\***************************************************************************/
+
 #define _GNU_SOURCE
 // getopt
 #include <getopt.h>
@@ -90,11 +123,13 @@ static int filter(const struct dirent * d)  {
 
 int main(int argc, char * argv[]) {
 	enum {
-		OPT_DIR = 'd',
+		OPT_DIR  = 'd',
+		OPT_HELP = 'h',
 	};
 
 	static const struct option op[] = {
 		{ "directory",	1, 0, OPT_DIR },
+		{ "help",       0, 0, OPT_HELP },
 
 		{ 0, 0, 0, 0 }
 	};
@@ -106,10 +141,10 @@ int main(int argc, char * argv[]) {
 
 	int c, lo;
 	do {
-		c = getopt_long(argc, argv, "d:", op, &lo);
+		c = getopt_long(argc, argv, "d:h", op, &lo);
 
 		switch (c) {
-			case 'd':
+			case OPT_DIR:
 				found = true;
 
 				bzero(&cnt, sizeof(cnt));
@@ -124,6 +159,13 @@ int main(int argc, char * argv[]) {
 				printf("Nb folders: %llu, nb files: %llu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
 
 				break;
+
+			case OPT_HELP:
+				printf("count_files: compute the number of files/folders into a directory\n");
+				printf("  usage: count_files [-d <dir>|-h]\n");
+				printf("    -d, --directory <dir> : count from <dir> directory\n");
+				printf("    -h, --help            : show this and exit\n");
+				return 0;
 		}
 	} while (c > -1);
 
