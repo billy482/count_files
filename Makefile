@@ -12,7 +12,7 @@ STRIP		:= ${TARGET}strip
 
 
 # variable
-NAME		:= mtar
+NAME		:= count_files
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
 
@@ -28,7 +28,7 @@ DEPEND_DIR	:= depend
 INCLUDE_DIR := . include ${CHCKSUM_DIR}
 
 SRC_FILES	:=
-HEAD_FILES	:= $(sort $(shell test -d include && find include -name '*.h'))
+HEAD_FILES	:=
 DEP_FILES	:=
 OBJ_FILES	:=
 
@@ -48,7 +48,7 @@ VERSION_OPT		:= MTAR mtar.version
 
 
 # sub makefiles
-SUB_MAKES	:= $(sort $(shell test -d src -a -d test && find src test -name Makefile.sub))
+SUB_MAKES	:= $(sort $(shell test -d src && find src -name Makefile.sub))
 ifeq (${SUB_MAKES},)
 $(error "No sub makefiles")
 endif
@@ -155,7 +155,7 @@ ctags TAGS: tags
 
 debug: binaries
 	@echo ' GDB'
-	${GDB} bin/mtar
+	${GDB} bin/count_files
 
 distclean realclean: clean
 	@echo ' RM       -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags'
