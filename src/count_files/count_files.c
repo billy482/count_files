@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Tue, 19 Feb 2013 22:49:08 +0100                           *
+*  Last modified: Tue, 05 Mar 2013 22:01:38 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -156,7 +156,7 @@ int main(int argc, char * argv[]) {
 
 				printf("\r                                                                                             \r");
 				printf("Folders parsed: %s\n", optarg);
-				printf("Nb folders: %llu, nb files: %llu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
+				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
 
 				break;
 
@@ -179,7 +179,7 @@ int main(int argc, char * argv[]) {
 
 		printf("\r                                                                                             \r");
 		printf("Folders parsed: current directory\n");
-		printf("Nb folders: %llu, nb files: %llu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
+		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
 	}
 
 	return 0;
@@ -195,13 +195,18 @@ static bool parse(const char * path, struct count * count) {
 		static short i = 0;
 		static char vals[] = { '|', '/', '-', '\\' };
 
-		printf("\rnb folders: %llu, nb files: %llu, total size: %zd [%c]", count->nb_folders, count->nb_files, count->total_size, vals[i]);
+		char buf[16];
+		convert_size(count->total_size, buf, 16);
+
+		printf("\rnb folders: %zu, nb files: %zu, total size: %s [%c]", count->nb_folders, count->nb_files, buf, vals[i]);
 		fflush(stdout);
 
 		count->last_update = now;
 		i++;
 		i &= 0x3;
 	}
+
+	bool ok = true;
 
 	if (S_ISREG(st.st_mode)) {
 		count->nb_files++;
@@ -213,16 +218,18 @@ static bool parse(const char * path, struct count * count) {
 
 		struct dirent ** dl = NULL;
 		int i, nb_files = scandir(path, &dl, filter, versionsort);
-		for (i = 0; i < nb_files; i++) {
+		for (i = 0; i < nb_files && ok; i++) {
 			char * subpath;
 			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			parse(subpath, count);
+			ok = parse(subpath, count);
 
 			free(subpath);
 			free(dl[i]);
 		}
 		free(dl);
 	}
+
+	return ok;
 }
 
