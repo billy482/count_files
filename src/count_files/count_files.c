@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2013, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Tue, 05 Mar 2013 22:01:38 +0100                           *
+*  Last modified: Tue, 19 Mar 2013 13:24:11 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -76,9 +76,18 @@ static void convert_size(ssize_t size, char * str, ssize_t str_len) {
 	unsigned short mult = 0;
 	double tsize = size;
 
-	while (tsize >= 1024 && mult < 4) {
+	while (tsize >= 1000 && mult < 4) {
 		tsize /= 1024;
 		mult++;
+	}
+
+	int fixed = 0;
+	if (tsize < 0) {
+		fixed = 3;
+	} else if (tsize < 10) {
+		fixed = 2;
+	} else if (tsize < 100) {
+		fixed = 1;
 	}
 
 	switch (mult) {
@@ -86,16 +95,16 @@ static void convert_size(ssize_t size, char * str, ssize_t str_len) {
 			snprintf(str, str_len, "%zd Bytes", size);
 			break;
 		case 1:
-			snprintf(str, str_len, "%.1f KBytes", tsize);
+			snprintf(str, str_len, "%.*f KBytes", fixed, tsize);
 			break;
 		case 2:
-			snprintf(str, str_len, "%.2f MBytes", tsize);
+			snprintf(str, str_len, "%.*f MBytes", fixed, tsize);
 			break;
 		case 3:
-			snprintf(str, str_len, "%.3f GBytes", tsize);
+			snprintf(str, str_len, "%.*f GBytes", fixed, tsize);
 			break;
 		default:
-			snprintf(str, str_len, "%.4f TBytes", tsize);
+			snprintf(str, str_len, "%.*f TBytes", fixed, tsize);
 	}
 
 	if (strchr(str, '.')) {
