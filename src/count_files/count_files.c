@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 11:53:54 +0100                           *
+*  Last modified: Sun, 23 Feb 2014 23:43:00 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -198,6 +198,7 @@ int main(int argc, char * argv[]) {
 				printf("  usage: count_files [-d <dir>|-h]\n");
 				printf("    -d, --directory <dir> : count from <dir> directory\n");
 				printf("    -h, --help            : show this and exit\n");
+				printf("    -i, --interval <int>  : set interval between two updates of progression\n");
 				return 0;
 
 			case OPT_INTERVAL:
