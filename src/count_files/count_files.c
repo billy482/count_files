@@ -27,8 +27,8 @@
 *  along with this program.  If not, see <http://www.gnu.org/licenses/>.    *
 *                                                                           *
 *  -----------------------------------------------------------------------  *
-*  Copyright (C) 2013, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Tue, 19 Mar 2013 13:24:11 +0100                           *
+*  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
+*  Last modified: Sun, 23 Feb 2014 09:31:11 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -65,6 +65,7 @@ struct count {
 	ssize_t total_used;
 
 	time_t last_update;
+	int interval;
 };
 
 static void convert_size(ssize_t size, char * str, ssize_t str_len);
@@ -132,13 +133,15 @@ static int filter(const struct dirent * d)  {
 
 int main(int argc, char * argv[]) {
 	enum {
-		OPT_DIR  = 'd',
-		OPT_HELP = 'h',
+		OPT_DIR      = 'd',
+		OPT_HELP     = 'h',
+		OPT_INTERVAL = 'i',
 	};
 
 	static const struct option op[] = {
 		{ "directory",	1, 0, OPT_DIR },
 		{ "help",       0, 0, OPT_HELP },
+		{ "interval",   1, 0, OPT_INTERVAL },
 
 		{ 0, 0, 0, 0 }
 	};
@@ -147,16 +150,19 @@ int main(int argc, char * argv[]) {
 	static char buf_size[16], buf_used[16];
 
 	bool found = false;
+	int interval = 1;
 
 	int c, lo;
 	do {
-		c = getopt_long(argc, argv, "d:h", op, &lo);
+		c = getopt_long(argc, argv, "d:hi:", op, &lo);
 
+		int tmp_interval;
 		switch (c) {
 			case OPT_DIR:
 				found = true;
 
 				bzero(&cnt, sizeof(cnt));
+				cnt.interval = interval;
 
 				parse(optarg, &cnt);
 
@@ -175,11 +181,19 @@ int main(int argc, char * argv[]) {
 				printf("    -d, --directory <dir> : count from <dir> directory\n");
 				printf("    -h, --help            : show this and exit\n");
 				return 0;
+
+			case OPT_INTERVAL:
+				sscanf(optarg, "%d", &tmp_interval);
+
+				if (tmp_interval > 0)
+					interval = tmp_interval;
+				break;
 		}
 	} while (c > -1);
 
 	if (!found) {
 		bzero(&cnt, sizeof(cnt));
+		cnt.interval = interval;
 
 		parse(".", &cnt);
 
@@ -200,7 +214,7 @@ static bool parse(const char * path, struct count * count) {
 		return false;
 
 	time_t now = time(NULL);
-	if (now != count->last_update) {
+	if (now >= count->last_update + count->interval) {
 		static short i = 0;
 		static char vals[] = { '|', '/', '-', '\\' };
 
