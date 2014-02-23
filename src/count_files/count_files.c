@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 23:43:00 +0100                           *
+*  Last modified: Sun, 23 Feb 2014 23:53:12 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -63,6 +63,10 @@
 // lstat
 #include <unistd.h>
 
+#ifndef MAX_LINE_WIDTH
+#define MAX_LINE_WIDTH 1024
+#endif
+
 struct count {
 	uint64_t nb_folders;
 	uint64_t nb_files;
@@ -74,7 +78,7 @@ struct count {
 	int interval;
 };
 
-static char terminal_clean_line[1025];
+static char terminal_clean_line[MAX_LINE_WIDTH + 1];
 static unsigned int terminal_width = 72;
 
 static void convert_size(ssize_t size, char * str, ssize_t str_len);
@@ -228,7 +232,7 @@ int main(int argc, char * argv[]) {
 }
 
 static void init_clean_line() {
-	memset(terminal_clean_line + 1, ' ', 1023);
+	memset(terminal_clean_line + 1, ' ', MAX_LINE_WIDTH - 1);
 	terminal_clean_line[0] = '\r';
 	terminal_clean_line[terminal_width] = '\r';
 	terminal_clean_line[terminal_width + 1] = '\0';
@@ -295,23 +299,26 @@ static void resize_terminal(int signal __attribute__((unused))) {
 	terminal_width = 72;
 
 	static struct winsize size;
-	int status = ioctl(2, TIOCGWINSZ, &size);
+	int status = ioctl(1, TIOCGWINSZ, &size);
 	if (!status) {
-		terminal_width = size.ws_col;
+		terminal_width = size.ws_col > MAX_LINE_WIDTH ? MAX_LINE_WIDTH : size.ws_col;
 		init_clean_line();
 		return;
 	}
 
 	status = ioctl(0, TIOCGWINSZ, &size);
 	if (!status) {
-		terminal_width = size.ws_col;
+		terminal_width = size.ws_col > MAX_LINE_WIDTH ? MAX_LINE_WIDTH : size.ws_col;
 		init_clean_line();
 		return;
 	}
 
 	char * columns = getenv("COLUMNS");
-	if (columns != NULL && sscanf(columns, "%d", &terminal_width) == 1)
+	int tmp_width;
+	if (columns != NULL && sscanf(columns, "%d", &tmp_width) == 1) {
+		terminal_width = tmp_width > MAX_LINE_WIDTH ? MAX_LINE_WIDTH : tmp_width;
 		init_clean_line();
+	}
 }
 
 static void string_middle_elipsis(char * string, size_t length) {
