@@ -82,7 +82,9 @@ static int filter(const struct dirent * d);
 static void init_clean_line(void);
 static bool parse(const char * path, struct count * count);
 static void resize_terminal(int signal);
+static void string_middle_elipsis(char * string, size_t length);
 static void string_rtrim(char * str, char trim);
+static int string_valid_utf8_char(const char * string);
 
 
 static void convert_size(ssize_t size, char * str, ssize_t str_len) {
@@ -246,12 +248,15 @@ static bool parse(const char * path, struct count * count) {
 
 		printf(terminal_clean_line);
 		int width;
-		printf("nb folders: %zu, nb files: %zu, total size: %s%n", count->nb_folders, count->nb_files, buf, &width);
-		if (width + 13 + strlen(path) < terminal_width)
-			printf(", path: %s [%c]", path, vals[i]);
-		else
-			printf(" [%c]", vals[i]);
+		printf("nb folders: %zu, nb files: %zu, total size: %s, path: %n", count->nb_folders, count->nb_files, buf, &width);
+
+		char * ppath = strdup(path);
+		string_middle_elipsis(ppath, terminal_width - width - 5);
+
+		printf("%s [%c]", ppath, vals[i]);
 		fflush(stdout);
+
+		free(ppath);
 
 		count->last_update = now;
 		i++;
@@ -308,6 +313,45 @@ static void resize_terminal(int signal __attribute__((unused))) {
 		init_clean_line();
 }
 
+static void string_middle_elipsis(char * string, size_t length) {
+	size_t str_length = strlen(string);
+	if (str_length <= length)
+		return;
+
+	length--;
+
+	size_t used = 0;
+	char * ptrA = string;
+	char * ptrB = string + str_length;
+	while (used < length) {
+		int char_length = string_valid_utf8_char(ptrA);
+		if (char_length == 0)
+			return;
+
+		if (used + char_length > length)
+			break;
+
+		used += char_length;
+		ptrA += char_length;
+
+		int offset = 1;
+		while (char_length = string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
+			offset++;
+
+		if (char_length == 0)
+			return;
+
+		if (used + char_length > length)
+			break;
+
+		used += char_length;
+		ptrB -= char_length;
+	}
+
+	*ptrA = '~';
+	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
+}
+
 static void string_rtrim(char * str, char trim) {
 	size_t length = strlen(str);
 
@@ -316,5 +360,46 @@ static void string_rtrim(char * str, char trim) {
 
 	if (ptr[1] != '\0')
 		ptr[1] = '\0';
+}
+
+static int string_valid_utf8_char(const char * string) {
+	const unsigned char * ptr = (const unsigned char *) string;
+	if ((*ptr & 0x7F) == *ptr) {
+		return 1;
+	} else if ((*ptr & 0xBF) == *ptr) {
+		return 0;
+	} else if ((*ptr & 0xDF) == *ptr) {
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		return 2;
+	} else if ((*ptr & 0xEF) == *ptr) {
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		return 3;
+	} else if ((*ptr & 0x7F) == *ptr) {
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		ptr++;
+		if ((*ptr & 0xBF) != *ptr || (*ptr & 0x80) != 0x80)
+			return 0;
+
+		return 4;
+	} else {
+		return 0;
+	}
 }
 
