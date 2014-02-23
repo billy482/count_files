@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 09:31:11 +0100                           *
+*  Last modified: Sun, 23 Feb 2014 10:29:49 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -36,22 +36,28 @@
 #include <getopt.h>
 // scandir
 #include <dirent.h>
+// signal
+#include <signal.h>
 // bool
 #include <stdbool.h>
 // uint
 #include <stdint.h>
 // asprintf, fflush, printf, snprintf
 #include <stdio.h>
-// free
+// free, getenv
 #include <stdlib.h>
-// memmove, strchr, strlen
+// memmove, memset, strchr, strlen
 #include <string.h>
 // bzero
 #include <strings.h>
+// ioctl
+#include <sys/ioctl.h>
 // lstat
 #include <sys/stat.h>
 // lstat, ssize_t
 #include <sys/types.h>
+// struct winsize
+#include <termios.h>
 // time
 #include <time.h>
 // lstat
@@ -68,9 +74,14 @@ struct count {
 	int interval;
 };
 
+static char terminal_clean_line[1025];
+static unsigned int terminal_width = 72;
+
 static void convert_size(ssize_t size, char * str, ssize_t str_len);
 static int filter(const struct dirent * d);
+static void init_clean_line(void);
 static bool parse(const char * path, struct count * count);
+static void resize_terminal(int signal);
 
 
 static void convert_size(ssize_t size, char * str, ssize_t str_len) {
@@ -152,6 +163,9 @@ int main(int argc, char * argv[]) {
 	bool found = false;
 	int interval = 1;
 
+	resize_terminal(0);
+	signal(SIGWINCH, resize_terminal);
+
 	int c, lo;
 	do {
 		c = getopt_long(argc, argv, "d:hi:", op, &lo);
@@ -208,6 +222,13 @@ int main(int argc, char * argv[]) {
 	return 0;
 }
 
+static void init_clean_line() {
+	memset(terminal_clean_line + 1, ' ', 1023);
+	terminal_clean_line[0] = '\r';
+	terminal_clean_line[terminal_width] = '\r';
+	terminal_clean_line[terminal_width + 1] = '\0';
+}
+
 static bool parse(const char * path, struct count * count) {
 	struct stat st;
 	if (lstat(path, &st))
@@ -221,7 +242,13 @@ static bool parse(const char * path, struct count * count) {
 		char buf[16];
 		convert_size(count->total_size, buf, 16);
 
-		printf("\rnb folders: %zu, nb files: %zu, total size: %s [%c]", count->nb_folders, count->nb_files, buf, vals[i]);
+		printf(terminal_clean_line);
+		int width;
+		printf("nb folders: %zu, nb files: %zu, total size: %s%n", count->nb_folders, count->nb_files, buf, &width);
+		if (width + 13 + strlen(path) < terminal_width)
+			printf(", path: %s [%c]", path, vals[i]);
+		else
+			printf(" [%c]", vals[i]);
 		fflush(stdout);
 
 		count->last_update = now;
@@ -254,5 +281,28 @@ static bool parse(const char * path, struct count * count) {
 	}
 
 	return ok;
+}
+
+static void resize_terminal(int signal __attribute__((unused))) {
+	terminal_width = 72;
+
+	static struct winsize size;
+	int status = ioctl(2, TIOCGWINSZ, &size);
+	if (!status) {
+		terminal_width = size.ws_col;
+		init_clean_line();
+		return;
+	}
+
+	status = ioctl(0, TIOCGWINSZ, &size);
+	if (!status) {
+		terminal_width = size.ws_col;
+		init_clean_line();
+		return;
+	}
+
+	char * columns = getenv("COLUMNS");
+	if (columns != NULL && sscanf(columns, "%d", &terminal_width) == 1)
+		init_clean_line();
 }
 
