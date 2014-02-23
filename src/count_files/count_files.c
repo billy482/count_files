@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 10:44:29 +0100                           *
+*  Last modified: Sun, 23 Feb 2014 11:05:52 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -185,7 +185,7 @@ int main(int argc, char * argv[]) {
 				convert_size(cnt.total_size, buf_size, 16);
 				convert_size(cnt.total_used, buf_used, 16);
 
-				printf("\r                                                                                             \r");
+				printf(terminal_clean_line);
 				printf("Folders parsed: %s\n", optarg);
 				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
 
@@ -216,7 +216,7 @@ int main(int argc, char * argv[]) {
 		convert_size(cnt.total_size, buf_size, 16);
 		convert_size(cnt.total_used, buf_used, 16);
 
-		printf("\r                                                                                             \r");
+		printf(terminal_clean_line);
 		printf("Folders parsed: current directory\n");
 		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
 	}
