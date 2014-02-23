@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 10:29:49 +0100                           *
+*  Last modified: Sun, 23 Feb 2014 10:44:29 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -82,6 +82,7 @@ static int filter(const struct dirent * d);
 static void init_clean_line(void);
 static bool parse(const char * path, struct count * count);
 static void resize_terminal(int signal);
+static void string_rtrim(char * str, char trim);
 
 
 static void convert_size(ssize_t size, char * str, ssize_t str_len) {
@@ -178,6 +179,7 @@ int main(int argc, char * argv[]) {
 				bzero(&cnt, sizeof(cnt));
 				cnt.interval = interval;
 
+				string_rtrim(optarg, '/');
 				parse(optarg, &cnt);
 
 				convert_size(cnt.total_size, buf_size, 16);
@@ -304,5 +306,15 @@ static void resize_terminal(int signal __attribute__((unused))) {
 	char * columns = getenv("COLUMNS");
 	if (columns != NULL && sscanf(columns, "%d", &terminal_width) == 1)
 		init_clean_line();
+}
+
+static void string_rtrim(char * str, char trim) {
+	size_t length = strlen(str);
+
+	char * ptr;
+	for (ptr = str + (length - 1); *ptr == trim && ptr > str; ptr--);
+
+	if (ptr[1] != '\0')
+		ptr[1] = '\0';
 }
 
