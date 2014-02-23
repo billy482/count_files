@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 11:05:52 +0100                           *
+*  Last modified: Sun, 23 Feb 2014 11:53:54 +0100                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -318,7 +318,9 @@ static void string_middle_elipsis(char * string, size_t length) {
 	if (str_length <= length)
 		return;
 
-	length--;
+	length -= 3;
+	if (length < 2)
+		return;
 
 	size_t used = 0;
 	char * ptrA = string;
@@ -335,7 +337,7 @@ static void string_middle_elipsis(char * string, size_t length) {
 		ptrA += char_length;
 
 		int offset = 1;
-		while (char_length = string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0)
+		while (char_length = string_valid_utf8_char(ptrB - offset), ptrA < ptrB - offset && char_length == 0 && offset < 4)
 			offset++;
 
 		if (char_length == 0)
@@ -348,7 +350,7 @@ static void string_middle_elipsis(char * string, size_t length) {
 		ptrB -= char_length;
 	}
 
-	*ptrA = '~';
+	memmove(ptrA, "…", 3);
 	memmove(ptrA + 1, ptrB, strlen(ptrB) + 1);
 }
 
