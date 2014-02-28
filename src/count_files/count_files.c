@@ -76,6 +76,7 @@ struct count {
 
 	time_t last_update;
 	int interval;
+	bool one_fs;
 };
 
 static char terminal_clean_line[MAX_LINE_WIDTH + 1];
@@ -154,12 +155,14 @@ int main(int argc, char * argv[]) {
 		OPT_DIR      = 'd',
 		OPT_HELP     = 'h',
 		OPT_INTERVAL = 'i',
+		OPT_ONE_FS   = 'x',
 	};
 
 	static const struct option op[] = {
-		{ "directory",	1, 0, OPT_DIR },
-		{ "help",       0, 0, OPT_HELP },
-		{ "interval",   1, 0, OPT_INTERVAL },
+		{ "directory",	    1, 0, OPT_DIR },
+		{ "help",           0, 0, OPT_HELP },
+		{ "interval",       1, 0, OPT_INTERVAL },
+		{ "one-filesystem", 0, 0, OPT_ONE_FS },
 
 		{ 0, 0, 0, 0 }
 	};
@@ -169,13 +172,14 @@ int main(int argc, char * argv[]) {
 
 	bool found = false;
 	int interval = 1;
+	bool one_fs = false;
 
 	resize_terminal(0);
 	signal(SIGWINCH, resize_terminal);
 
 	int c, lo;
 	do {
-		c = getopt_long(argc, argv, "d:hi:", op, &lo);
+		c = getopt_long(argc, argv, "d:hi:x", op, &lo);
 
 		int tmp_interval;
 		switch (c) {
@@ -184,6 +188,7 @@ int main(int argc, char * argv[]) {
 
 				bzero(&cnt, sizeof(cnt));
 				cnt.interval = interval;
+				cnt.one_fs = one_fs;
 
 				string_rtrim(optarg, '/');
 				parse(optarg, &cnt);
@@ -203,6 +208,7 @@ int main(int argc, char * argv[]) {
 				printf("    -d, --directory <dir> : count from <dir> directory\n");
 				printf("    -h, --help            : show this and exit\n");
 				printf("    -i, --interval <int>  : set interval between two updates of progression\n");
+				printf("    -x, --one-filesystem  : skip directories on different file systems\n");
 				return 0;
 
 			case OPT_INTERVAL:
@@ -211,12 +217,17 @@ int main(int argc, char * argv[]) {
 				if (tmp_interval > 0)
 					interval = tmp_interval;
 				break;
+
+			case OPT_ONE_FS:
+				one_fs = true;
+				break;
 		}
 	} while (c > -1);
 
 	if (!found) {
 		bzero(&cnt, sizeof(cnt));
 		cnt.interval = interval;
+		cnt.one_fs = one_fs;
 
 		parse(".", &cnt);
 
@@ -284,7 +295,14 @@ static bool parse(const char * path, struct count * count) {
 			char * subpath;
 			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			ok = parse(subpath, count);
+			if (count->one_fs) {
+				struct stat fst;
+				lstat(subpath, &fst);
+
+				if (st.st_dev == fst.st_dev)
+					ok = parse(subpath, count);
+			} else
+				ok = parse(subpath, count);
 
 			free(subpath);
 			free(dl[i]);
