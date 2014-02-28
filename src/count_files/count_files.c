@@ -291,20 +291,22 @@ static bool parse(const char * path, struct count * count) {
 
 		struct dirent ** dl = NULL;
 		int i, nb_files = scandir(path, &dl, filter, versionsort);
-		for (i = 0; i < nb_files && ok; i++) {
-			char * subpath;
-			asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
+		for (i = 0; i < nb_files; i++) {
+			if (ok) {
+				char * subpath;
+				asprintf(&subpath, "%s/%s", path, dl[i]->d_name);
 
-			if (count->one_fs) {
-				struct stat fst;
-				lstat(subpath, &fst);
+				if (count->one_fs) {
+					struct stat fst;
+					lstat(subpath, &fst);
 
-				if (st.st_dev == fst.st_dev)
+					if (st.st_dev == fst.st_dev)
+						ok = parse(subpath, count);
+				} else
 					ok = parse(subpath, count);
-			} else
-				ok = parse(subpath, count);
 
-			free(subpath);
+				free(subpath);
+			}
 			free(dl[i]);
 		}
 		free(dl);
