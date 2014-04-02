@@ -178,7 +178,7 @@ int main(int argc, char * argv[]) {
 	signal(SIGWINCH, resize_terminal);
 
 	int c, lo;
-	float overhead;
+	float wasted;
 	do {
 		c = getopt_long(argc, argv, "d:hi:x", op, &lo);
 
@@ -196,11 +196,11 @@ int main(int argc, char * argv[]) {
 
 				convert_size(cnt.total_size, buf_size, 16);
 				convert_size(cnt.total_used, buf_used, 16);
-				overhead = ((float) cnt.total_used) / cnt.total_size - 1;
+				wasted = ((float) cnt.total_used) / cnt.total_size - 1;
 
 				printf(terminal_clean_line);
 				printf("Folder parsed: %s\n", optarg);
-				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * overhead);
+				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * wasted);
 
 				break;
 
@@ -235,11 +235,11 @@ int main(int argc, char * argv[]) {
 
 		convert_size(cnt.total_size, buf_size, 16);
 		convert_size(cnt.total_used, buf_used, 16);
-		overhead = ((float) cnt.total_used) / cnt.total_size - 1;
+		wasted = ((float) cnt.total_used) / cnt.total_size - 1;
 
 		printf(terminal_clean_line);
 		printf("Folder parsed: current directory\n");
-		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * overhead);
+		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * wasted);
 	}
 
 	return 0;
@@ -264,10 +264,11 @@ static bool parse(const char * path, struct count * count) {
 
 		char buf[16];
 		convert_size(count->total_size, buf, 16);
+		float wasted = ((float) count->total_used) / count->total_size - 1;
 
 		printf(terminal_clean_line);
 		int width;
-		printf("nb folders: %zu, nb files: %zu, total size: %s, path: %n", count->nb_folders, count->nb_files, buf, &width);
+		printf("nb folders: %zu, nb files: %zu, total size: %s, wasted: %.2f%%, path: %n", count->nb_folders, count->nb_files, buf, 100 * wasted, &width);
 
 		char * ppath = strdup(path);
 		string_middle_elipsis(ppath, terminal_width - width - 5);
