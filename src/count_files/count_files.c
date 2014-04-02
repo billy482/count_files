@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Wed, 02 Apr 2014 22:16:12 +0200                           *
+*  Last modified: Wed, 02 Apr 2014 22:28:21 +0200                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -74,7 +74,7 @@ struct count {
 	ssize_t total_size;
 	ssize_t total_used;
 
-	time_t last_update;
+	struct timespec last_update;
 	int interval;
 	bool one_fs;
 };
@@ -257,8 +257,9 @@ static bool parse(const char * path, struct count * count) {
 	if (lstat(path, &st))
 		return false;
 
-	time_t now = time(NULL);
-	if (now >= count->last_update + count->interval) {
+	struct timespec now;
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	if (now.tv_sec >= count->last_update.tv_sec + count->interval && now.tv_nsec >= count->last_update.tv_nsec) {
 		static short i = 0;
 		static char vals[] = { '|', '/', '-', '\\' };
 
