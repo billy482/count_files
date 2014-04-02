@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 23 Feb 2014 23:53:12 +0100                           *
+*  Last modified: Wed, 02 Apr 2014 22:16:12 +0200                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -178,6 +178,7 @@ int main(int argc, char * argv[]) {
 	signal(SIGWINCH, resize_terminal);
 
 	int c, lo;
+	float overhead;
 	do {
 		c = getopt_long(argc, argv, "d:hi:x", op, &lo);
 
@@ -195,10 +196,11 @@ int main(int argc, char * argv[]) {
 
 				convert_size(cnt.total_size, buf_size, 16);
 				convert_size(cnt.total_used, buf_used, 16);
+				overhead = ((float) cnt.total_used) / cnt.total_size - 1;
 
 				printf(terminal_clean_line);
-				printf("Folders parsed: %s\n", optarg);
-				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
+				printf("Folder parsed: %s\n", optarg);
+				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * overhead);
 
 				break;
 
@@ -233,10 +235,11 @@ int main(int argc, char * argv[]) {
 
 		convert_size(cnt.total_size, buf_size, 16);
 		convert_size(cnt.total_used, buf_used, 16);
+		overhead = ((float) cnt.total_used) / cnt.total_size - 1;
 
 		printf(terminal_clean_line);
-		printf("Folders parsed: current directory\n");
-		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used);
+		printf("Folder parsed: current directory\n");
+		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * overhead);
 	}
 
 	return 0;

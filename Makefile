@@ -44,7 +44,7 @@ LDFLAGS		:= -pthread
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
 
-VERSION_OPT		:= MTAR mtar.version
+VERSION_OPT		:= COUNTFILES count-files.version
 
 
 # sub makefiles
