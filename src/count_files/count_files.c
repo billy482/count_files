@@ -79,6 +79,8 @@ struct count {
 	bool one_fs;
 };
 
+static int interval = 1;
+static bool one_fs = false;
 static char terminal_clean_line[MAX_LINE_WIDTH + 1];
 static unsigned int terminal_width = 72;
 
@@ -86,6 +88,7 @@ static void convert_size(ssize_t size, char * str, ssize_t str_len);
 static int filter(const struct dirent * d);
 static void init_clean_line(void);
 static bool parse(const char * path, struct count * count);
+static void process(const char * dir);
 static void resize_terminal(int signal);
 static void string_middle_elipsis(char * string, size_t length);
 static void string_rtrim(char * str, char trim);
@@ -167,18 +170,12 @@ int main(int argc, char * argv[]) {
 		{ 0, 0, 0, 0 }
 	};
 
-	static struct count cnt;
-	static char buf_size[16], buf_used[16];
-
 	bool found = false;
-	int interval = 1;
-	bool one_fs = false;
 
 	resize_terminal(0);
 	signal(SIGWINCH, resize_terminal);
 
 	int c, lo;
-	float wasted;
 	do {
 		c = getopt_long(argc, argv, "d:hi:x", op, &lo);
 
@@ -186,21 +183,8 @@ int main(int argc, char * argv[]) {
 		switch (c) {
 			case OPT_DIR:
 				found = true;
-
-				bzero(&cnt, sizeof(cnt));
-				cnt.interval = interval;
-				cnt.one_fs = one_fs;
-
 				string_rtrim(optarg, '/');
-				parse(optarg, &cnt);
-
-				convert_size(cnt.total_size, buf_size, 16);
-				convert_size(cnt.total_used, buf_used, 16);
-				wasted = ((float) cnt.total_used) / cnt.total_size - 1;
-
-				printf(terminal_clean_line);
-				printf("Folder parsed: %s\n", optarg);
-				printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * wasted);
+				process(optarg);
 
 				break;
 
@@ -226,21 +210,14 @@ int main(int argc, char * argv[]) {
 		}
 	} while (c > -1);
 
-	if (!found) {
-		bzero(&cnt, sizeof(cnt));
-		cnt.interval = interval;
-		cnt.one_fs = one_fs;
-
-		parse(".", &cnt);
-
-		convert_size(cnt.total_size, buf_size, 16);
-		convert_size(cnt.total_used, buf_used, 16);
-		wasted = ((float) cnt.total_used) / cnt.total_size - 1;
-
-		printf(terminal_clean_line);
-		printf("Folder parsed: current directory\n");
-		printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * wasted);
+	for (; optind < argc; optind++) {
+		found = true;
+		string_rtrim(argv[optind], '/');
+		process(argv[optind]);
 	}
+
+	if (!found)
+		process(".");
 
 	return 0;
 }
@@ -318,6 +295,24 @@ static bool parse(const char * path, struct count * count) {
 	}
 
 	return ok;
+}
+
+static void process(const char * dir) {
+	struct count cnt;
+	bzero(&cnt, sizeof(cnt));
+	cnt.interval = interval;
+	cnt.one_fs = one_fs;
+
+	parse(dir, &cnt);
+
+	char buf_size[16], buf_used[16];
+	convert_size(cnt.total_size, buf_size, 16);
+	convert_size(cnt.total_used, buf_used, 16);
+	float wasted = ((float) cnt.total_used) / cnt.total_size - 1;
+
+	printf(terminal_clean_line);
+	printf("Folder parsed: %s\n", dir);
+	printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * wasted);
 }
 
 static void resize_terminal(int signal __attribute__((unused))) {
