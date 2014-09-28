@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Wed, 02 Apr 2014 22:28:21 +0200                           *
+*  Last modified: Sun, 28 Sep 2014 10:55:50 +0200                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -62,6 +62,8 @@
 #include <time.h>
 // lstat
 #include <unistd.h>
+
+#include "count-files.version"
 
 #ifndef MAX_LINE_WIDTH
 #define MAX_LINE_WIDTH 1024
@@ -159,6 +161,7 @@ int main(int argc, char * argv[]) {
 		OPT_HELP     = 'h',
 		OPT_INTERVAL = 'i',
 		OPT_ONE_FS   = 'x',
+		OPT_VERSION  = 'V',
 	};
 
 	static const struct option op[] = {
@@ -166,6 +169,7 @@ int main(int argc, char * argv[]) {
 		{ "help",           0, 0, OPT_HELP },
 		{ "interval",       1, 0, OPT_INTERVAL },
 		{ "one-filesystem", 0, 0, OPT_ONE_FS },
+		{ "version",        0, 0, OPT_VERSION },
 
 		{ 0, 0, 0, 0 }
 	};
@@ -177,7 +181,7 @@ int main(int argc, char * argv[]) {
 
 	int c, lo;
 	do {
-		c = getopt_long(argc, argv, "d:hi:x", op, &lo);
+		c = getopt_long(argc, argv, "d:hi:Vx", op, &lo);
 
 		int tmp_interval;
 		switch (c) {
@@ -207,6 +211,11 @@ int main(int argc, char * argv[]) {
 			case OPT_ONE_FS:
 				one_fs = true;
 				break;
+
+			case OPT_VERSION:
+				printf("count_files: compute the number of files/folders into a directory\n");
+				printf("  Version: " COUNTFILES_VERSION ", git commit: " COUNTFILES_GIT_COMMIT "\n");
+				return 0;
 		}
 	} while (c > -1);
 
