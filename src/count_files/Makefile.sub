@@ -1,7 +1,7 @@
 COUNT_FILES_SRC_DIR			:= src/count_files
 
 COUNT_FILES_BIN				:= bin/count_files
-COUNT_FILES_LD				:=
+COUNT_FILES_LD				:= $(shell ./script/check-link.sh gettime.c -lrt)
 
 COUNT_FILES_CHCKSUM_FILE	:= count_files.chcksum
 
