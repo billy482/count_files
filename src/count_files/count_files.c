@@ -28,7 +28,7 @@
 *                                                                           *
 *  -----------------------------------------------------------------------  *
 *  Copyright (C) 2014, Clercin guillaume <clercin.guillaume@gmail.com>      *
-*  Last modified: Sun, 28 Sep 2014 10:55:50 +0200                           *
+*  Last modified: Sun, 05 Oct 2014 10:07:11 +0200                           *
 \***************************************************************************/
 
 #define _GNU_SOURCE
@@ -253,7 +253,7 @@ static bool parse(const char * path, struct count * count) {
 		convert_size(count->total_size, buf, 16);
 		float wasted = ((float) count->total_used) / count->total_size - 1;
 
-		printf(terminal_clean_line);
+		printf("%s", terminal_clean_line);
 		int width;
 		printf("nb folders: %zu, nb files: %zu, total size: %s, wasted: %.2f%%, path: %n", count->nb_folders, count->nb_files, buf, 100 * wasted, &width);
 
@@ -319,7 +319,7 @@ static void process(const char * dir) {
 	convert_size(cnt.total_used, buf_used, 16);
 	float wasted = ((float) cnt.total_used) / cnt.total_size - 1;
 
-	printf(terminal_clean_line);
+	printf("%s", terminal_clean_line);
 	printf("Folder parsed: %s\n", dir);
 	printf("Nb folders: %zu, nb files: %zu\nTotal size: %s, total used space: %s, wasted: %.2f%%\n\n", cnt.nb_folders, cnt.nb_files, buf_size, buf_used, 100 * wasted);
 }

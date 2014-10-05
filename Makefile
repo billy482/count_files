@@ -1,6 +1,7 @@
 MAKEFLAGS 	+= -rR --no-print-directory
 
 # commands
+# static code analysis tool: cppcheck, sparse (cgcc), splint
 CC			:= $(shell which ccache) ${TARGET}gcc
 CSCOPE		:= cscope
 CTAGS		:= ctags
@@ -15,6 +16,9 @@ STRIP		:= ${TARGET}strip
 NAME		:= count_files
 DIR_NAME	:= $(lastword $(subst /, , $(realpath .)))
 
+
+GIT_ARCHIVE := $(shell ./script/git-archive.pl ${DIR_NAME}).orig.tar
+GIT_HEAD	:= $(shell ./script/git-head.pl)
 
 BINS		:=
 BIN_SYMS	:=
@@ -38,13 +42,14 @@ endif
 
 
 # compilation flags
-CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes $(addprefix -I,${INCLUDE_DIR}) -pthread
-LDFLAGS		:= -pthread
+CFLAGS		:= -std=gnu99 -pipe -O0 -ggdb3 -D_FORTIFY_SOURCE=2 -Wall -Wextra -Wabi -Werror-implicit-function-declaration -Wmissing-prototypes -Wformat-security -Werror=format-security -fstack-protector --param ssp-buffer-size=4 -fPIE -pie $(addprefix -I,${INCLUDE_DIR})
+LDFLAGS		:= -Wl,-z,relro,-z,now
 
 CSCOPE_OPT	:= -b -R -s src -U -I include
 CTAGS_OPT	:= -R src
 
-VERSION_OPT		:= COUNTFILES count-files.version
+VERSION_FILE	:= count-files.version
+VERSION_OPT		:= COUNTFILES ${VERSION_FILE}
 
 
 # sub makefiles
@@ -69,13 +74,23 @@ ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE}: $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES}
 	@echo " CHCKSUM  $$@"
 	@./script/checksum.pl $(1) ${CHCKSUM_DIR}/$${$(1)_CHCKSUM_FILE} $$(sort $${$(1)_SRC_FILES} $${$(1)_HEAD_FILES})
 
-$$($(1)_BIN): $$($(1)_LIB) $$($(1)_OBJ_FILES)
+$$($(1)_BIN): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
 	@echo " LD       $$@"
 	@${CC} -o $$@ $$($(1)_OBJ_FILES) ${LDFLAGS} $$($(1)_LD)
-	@${OBJCOPY} --only-keep-debug $$@ $$@.debug
-	@${STRIP} $$@
-	@${OBJCOPY} --add-gnu-debuglink=$$@.debug $$@
-	@chmod -x $$@.debug
+#	@${OBJCOPY} --only-keep-debug $$@ $$@.debug
+#	@${STRIP} $$@
+#	@${OBJCOPY} --add-gnu-debuglink=$$@.debug $$@
+#	@chmod -x $$@.debug
+
+$$($(1)_LIB): $$($(1)_DEPEND_LIB) $$($(1)_OBJ_FILES)
+	@echo " LD       $$@"
+	@${CC} -o $$@.$$($(1)_LIB_VERSION) $$($(1)_OBJ_FILES) -shared -Wl,-soname,$$($(1)_SONAME) ${LDFLAGS} $$($(1)_LD)
+	@objcopy --only-keep-debug $$@.$$($(1)_LIB_VERSION) $$@.$$($(1)_LIB_VERSION).debug
+	@strip $$@.$$($(1)_LIB_VERSION)
+	@objcopy --add-gnu-debuglink=$$@.$$($(1)_LIB_VERSION).debug $$@.$$($(1)_LIB_VERSION)
+	@chmod -x $$@.$$($(1)_LIB_VERSION).debug
+	@ln -sf $$(notdir $$@.$$($(1)_LIB_VERSION)) $$@.$$(basename $$($(1)_LIB_VERSION))
+	@ln -sf $$($(1)_SONAME) $$@
 
 $$($(1)_BUILD_DIR)/%.o: $$($(1)_SRC_DIR)/%.c
 	@echo " CC       $$@"
@@ -134,7 +149,7 @@ DEP_DIRS	:= $(patsubst ${BUILD_DIR}/%,${DEPEND_DIR}/%,${OBJ_DIRS})
 
 # phony target
 .DEFAULT_GOAL	:= all
-.PHONY: all binaries clean cscope ctags debug distclean lib prepare realclean stat stat-extra TAGS tar test
+.PHONY: all binaries clean clean-depend cscope ctags debug distclean install lib package prepare realclean stat stat-extra TAGS tar
 .NOTPARALLEL: prepare
 
 all: binaries cscope tags
@@ -149,6 +164,10 @@ clean:
 	@echo ' RM       -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}'
 	@rm -Rf $(foreach dir,${BIN_DIRS},$(word 1,$(subst /, ,$(dir)))) ${BUILD_DIR}
 
+clean-depend:
+	@echo ' RM       -Rf depend'
+	@rm -Rf depend
+
 cscope: cscope.out
 
 ctags TAGS: tags
@@ -158,8 +177,8 @@ debug: binaries
 	${GDB} bin/count_files
 
 distclean realclean: clean
-	@echo ' RM       -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags'
-	@rm -Rf cscope.out doc ${CHCKSUM_DIR} ${DEPEND_DIR} tags
+	@echo ' RM       -Rf cscope.out ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}'
+	@rm -Rf cscope.out ${CHCKSUM_DIR} ${DEPEND_DIR} tags ${VERSION_FILE}
 
 doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@echo ' DOXYGEN'
@@ -175,7 +194,7 @@ stat:
 	@${GIT} diff -M --cached --stat=${COLUMNS}
 
 stat-extra:
-	@c_count -w 48 $(sort ${HEAD_FILES} ${SRC_FILES})
+	@c_count2 -w 64 $(sort ${HEAD_FILES} ${SRC_FILES})
 
 tar: ${NAME}.tar.bz2
 
@@ -190,6 +209,10 @@ ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS}:
 
 ${NAME}.tar.bz2:
 	${GIT} archive --format=tar --prefix=${DIR_NAME}/ master | bzip2 -9c > $@
+
+${VERSION_FILE}: ${GIT_HEAD}
+	@echo ' GEN      ${VERSION_FILE}'
+	@./script/version.pl ${VERSION_OPT}
 
 cscope.out: ${SRC_FILES} ${HEAD_FILES}
 	@echo " CSCOPE"
