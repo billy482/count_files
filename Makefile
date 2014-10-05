@@ -1,8 +1,11 @@
 MAKEFLAGS 	+= -rR --no-print-directory
 
+# define default compiler if not already defined
+CC			?= gcc
+
 # commands
 # static code analysis tool: cppcheck, sparse (cgcc), splint
-CC			:= $(shell which ccache) ${TARGET}gcc
+CC			:= $(shell which ccache) ${TARGET}${CC}
 CSCOPE		:= cscope
 CTAGS		:= ctags
 DOXYGEN		:= doxygen
