@@ -184,8 +184,19 @@ doc: Doxyfile ${LIBOBJECT_SRC_FILES} ${HEAD_FILES}
 	@echo ' DOXYGEN'
 	@${DOXYGEN}
 
-prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS})
-	@./script/version.pl ${VERSION_OPT}
+install: all
+	@echo ' MKDIR     ${DESTDIR}'
+	@mkdir -p ${DESTDIR}/usr/bin
+	@echo ' CP'
+	@cp bin/count_files ${DESTDIR}/usr/bin
+
+package:
+	@echo ' CLEAN'
+	@dh_clean
+	@echo ' BUILD package'
+	@dpkg-buildpackage -us -uc -rfakeroot
+
+prepare: ${BIN_DIRS} ${CHCKSUM_DIR} ${DEP_DIRS} ${OBJ_DIRS} $(addprefix prepare_,${BIN_SYMS}) $(addprefix prepare_,${TEST_BIN_SYMS}) ${VERSION_FILE}
 
 rebuild: clean all
 

@@ -1,0 +1,16 @@
+Source: count-files
+Section: utils
+Priority: optional
+Maintainer: guillaume clercin <gclercin@intellique.com>
+Build-Depends: debhelper (>= 9), git, cscope, exuberant-ctags
+Standards-Version: 3.9.5
+Homepage: https://github.com/billy482/count_files
+Vcs-Git: https://github.com/billy482/count_files.git
+Vcs-Browser: https://github.com/billy482/count_files
+
+Package: count-files
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Simple tool to count files
+ Simple tool to count files. Display number of directories, files and disk
+ space used.
